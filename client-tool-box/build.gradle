@@ -1,0 +1,83 @@
+buildscript {
+    ext {
+        awsAccessKeyId = System.env.AWS_ACCESS_KEY_ID ?: findProperty('aws_access_key_id')
+        awsSecretAccessKey = System.env.AWS_SECRET_ACCESS_KEY ?: findProperty('aws_secret_access_key')
+    }
+}
+
+plugins {
+	id 'org.springframework.boot' version '2.3.0.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+	id "org.springframework.boot.experimental.thin-launcher" version "1.0.24.RELEASE"
+	id 'java'
+	id 'maven-publish'
+	id 'application'
+}
+
+mainClassName = 'com.mallplanet.clienttoolbox.ClientToolBoxApplication'
+group = 'com.mallplanet'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+bootJar {
+	archiveFileName = 'client-tool-box-executable.jar'
+    enabled = false
+}
+
+jar {
+	manifest {
+        attributes(
+                'Main-Class': 'com.mallplanet.clienttoolbox.ClientToolBoxApplication'
+        )
+    }
+    enabled = true
+}
+
+dependencies {	
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}	
+	implementation 'com.squareup.retrofit2:retrofit:2.4.0'
+  	implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+  	implementation 'com.squareup.okhttp3:logging-interceptor:3.14.8'
+}
+
+repositories {
+    mavenCentral()
+    repositories {
+        maven {
+            url = 's3://mallplanet-maven/snapshot'
+            credentials(AwsCredentials) {
+                accessKey = awsAccessKeyId
+                secretKey = awsSecretAccessKey
+            }
+        }
+    }
+}
+
+publish {
+	dependsOn assemble
+}
+
+
+publishing {
+    publications {
+	    mavenJava(MavenPublication) {
+	      from(components.java)
+	    }
+    }
+    repositories {
+        maven {
+            url = 's3://mallplanet-maven/snapshot'
+            credentials(AwsCredentials) {
+                accessKey = awsAccessKeyId
+                secretKey = awsSecretAccessKey
+            }
+        }
+    }
+}
+
+test {
+	useJUnitPlatform()
+}
